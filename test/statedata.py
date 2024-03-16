@@ -13,8 +13,9 @@ import datetime
 # ユーザー情報を取得
 user_df = pd.read_csv("/workspace/data/user.csv", encoding="utf8")
 # ユーザーごとに作成したログを一時的に保管する変数を作成
+logs = {}
 for user in user_df["id"]:
-    logs = {user: {}}
+    logs[user] = {}
 
 # 最終取得日を設定
 current_date = datetime.date(2024, 2, 29)
@@ -67,42 +68,70 @@ def usage_log(logs, param, current_date):
     }
     try:
         report_between = current_date - param["contract_start_date"]
-        user_vector = np.linespace(1, param["contract_enable_user"], report_between.days)
-        storage_vector = np.linespace(0.1, param["contract_storage"]*0.9, report_between.days)
-        task_vector = np.linespace(1, param["max_tasks"], report_between.days)
+        user_vector = np.linspace(1, param["contract_enable_user"], report_between.days)
+        storage_vector = np.linspace(0.1, param["contract_storage"]*0.9, report_between.days)
+        task_vector = np.linspace(1, param["max_tasks"], report_between.days)
         for i in range(report_between.days):
             user_limit = param["contract_user"]
             enable_user = np.ceil(user_vector[i])
             login_num = random.randint(0, enable_user)
-            use_storage = storage_vector[i]
-            created_task = task_vector[i]
+            use_storage = np.round(storage_vector[i],1)
+            created_task = np.ceil(task_vector[i])
             
-            logs["dates"].append(param["contranct_start_date"]+(i+1))
+            logs["dates"].append(param["contract_start_date"]+datetime.timedelta(days=(i)))
             logs["users"].append(user_limit)
             logs["en_users"].append(enable_user)
             logs["login_num"].append(login_num)
             logs["usage"].append(use_storage)
             logs["tasks"].append(created_task)
         
-        return 0
+        return logs, 0
     except Exception as e:
         return e
 
 
-id_1_fb = usage_log(logs["1"], id_1, current_date)
-id_2_fb = usage_log(logs["2"], id_2, current_date)
-id_3_fb = usage_log(logs["3"], id_3, current_date)
-id_4_fb = usage_log(logs["4"], id_4, current_date)
-id_5_fb = usage_log(logs["5"], id_5, current_date)
+logs[1], id_1_fb = usage_log(logs[1], id_1, current_date)
+logs[2], id_2_fb = usage_log(logs[2], id_2, current_date)
+logs[3], id_3_fb = usage_log(logs[3], id_3, current_date)
+logs[4], id_4_fb = usage_log(logs[4], id_4, current_date)
+logs[5], id_5_fb = usage_log(logs[5], id_5, current_date)
 
+try:
+    if os.path.isfile("/workspace/data/state.csv"):
+        with open("/workspace/data/state.csv", "w", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["date", "userid", "user_limit", "enable_user", "login_num", "usage", "tasks"])
+            indexes = np.zeros(5, dtype=int)
+            start_flag = [False, False, False, False, False]
+            
+            for i in range((current_date - id_1["contract_start_date"]).days):
+                log_date = id_1["contract_start_date"] + datetime.timedelta(days=i)
+                start_flag[0] = True if logs[1]["dates"][0] <= log_date else False
+                start_flag[1] = True if logs[2]["dates"][0] <= log_date else False
+                start_flag[2] = True if logs[3]["dates"][0] <= log_date else False
+                start_flag[3] = True if logs[4]["dates"][0] <= log_date else False
+                start_flag[4] = True if logs[5]["dates"][0] <= log_date else False
+  
+                if start_flag[0]:
+                    writer.writerow([log_date, 1, logs[1]["users"][indexes[0]], logs[1]["en_users"][indexes[0]], logs[1]["login_num"][indexes[0]], logs[1]["usage"][indexes[0]], logs[1]["tasks"][indexes[0]]])
+                    indexes[0] = indexes[0] + 1
 
-if os.path.isfile("/workspace/data/state.csv"):
-    with open("/workspace/data/state.csv", "w", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow = ["date", "userid", "user_limit", "enable_user", "login_num", "usage", "tasks"]
-        for i in range((current_date - id_1["contract_start_date"]).days):
-            aaa
+                if start_flag[1]:
+                    writer.writerow([log_date, 2, logs[2]["users"][indexes[1]], logs[2]["en_users"][indexes[1]], logs[2]["login_num"][indexes[1]], logs[2]["usage"][indexes[1]], logs[2]["tasks"][indexes[1]]])
+                    indexes[1] = indexes[1] + 1
 
+                if start_flag[2]:
+                    writer.writerow([log_date, 3, logs[3]["users"][indexes[2]], logs[3]["en_users"][indexes[2]], logs[3]["login_num"][indexes[2]], logs[3]["usage"][indexes[2]], logs[3]["tasks"][indexes[2]]])
+                    indexes[2] = indexes[2] + 1
 
+                if start_flag[3]:
+                    writer.writerow([log_date, 4, logs[4]["users"][indexes[3]], logs[4]["en_users"][indexes[3]], logs[4]["login_num"][indexes[3]], logs[4]["usage"][indexes[3]], logs[4]["tasks"][indexes[3]]])
+                    indexes[3] = indexes[3] + 1
+
+                if start_flag[4]:
+                    writer.writerow([log_date, 5, logs[5]["users"][indexes[4]], logs[5]["en_users"][indexes[4]], logs[5]["login_num"][indexes[4]], logs[5]["usage"][indexes[4]], logs[5]["tasks"][indexes[4]]])
+                    indexes[4] = indexes[4] + 1
+except Exception as e:
+    print(e)
 
 
