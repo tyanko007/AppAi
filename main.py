@@ -1,9 +1,9 @@
 #coding : utf-8
 
-import fastapi as FastAPI
+from fastapi import FastAPI
 
 app = FastAPI()
 
-@api.get("/")
+@app.get("/")
 async def root():
     return {"message": "Hello World"}
